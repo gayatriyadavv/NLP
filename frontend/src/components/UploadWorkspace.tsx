@@ -16,19 +16,19 @@ export const UploadWorkspace: React.FC<UploadWorkspaceProps> = ({ onPipelineSucc
   const [currentStage, setCurrentStage] = useState(0);
 
   const scicapPresetSamples = [
-    { id: 'scicap_001', label: 'SciCap 001: ResNet vs ViT Top-1 Accuracy Curves (2D Plot)', query: 'What figure compares top-1 accuracy curves of ResNet-50 and ViT-Base on ImageNet?' },
-    { id: 'scicap_002', label: 'SciCap 002: Transformer Multi-Head Self-Attention (Heatmap)', query: 'Explain attention weights in head 5 resolving long-range noun phrase dependencies' },
-    { id: 'scicap_003', label: 'SciCap 003: AlphaFold Protein Molecular Structure (3D Render)', query: 'What 3D atomic coordinates and pLDDT confidence scores are shown?' },
-    { id: 'scicap_004', label: 'SciCap 004: BN-Inception Training Loss Convergence (Scatter Plot)', query: 'Demonstrate learning rate convergence for Batch Normalization' }
+    { id: 'scicap_001', label: 'Demo 001: ResNet vs ViT Accuracy Placeholder (2D Plot)', query: 'What figure compares top-1 accuracy curves of ResNet-50 and ViT-Base on ImageNet?' },
+    { id: 'scicap_002', label: 'Demo 002: Attention Heatmap Placeholder', query: 'Explain attention weights in head 5 resolving long-range noun phrase dependencies' },
+    { id: 'scicap_003', label: 'Demo 003: Protein Structure Placeholder (3D)', query: 'What 3D atomic coordinates and pLDDT confidence scores are shown?' },
+    { id: 'scicap_004', label: 'Demo 004: BatchNorm Loss Placeholder (Scatter Plot)', query: 'Demonstrate learning rate convergence for Batch Normalization' }
   ];
 
   const stages = [
     'Loading SciCap dataset sample & parsing document hierarchy...',
-    'Extracting scientific named entities (SciBERT)...',
+    'Extracting scientific named entities (regex NER)...',
     'Building 4-level vector context index (FAISS)...',
     'Processing figure layout & visual elements...',
     'Constructing NetworkX entity grounding graph...',
-    'Generating grounded caption & evaluating against SciCap author ground-truth...'
+    'Generating grounded caption & comparing with the sample caption...'
   ];
 
   const handleSelectSciCap = (sampleId: string) => {

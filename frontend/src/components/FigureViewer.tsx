@@ -1,14 +1,116 @@
 import React, { useState } from 'react';
 import { ZoomIn, ZoomOut, RotateCcw, Layers, Eye, Sparkles, Box, Orbit } from 'lucide-react';
-import type { FigureElement, ThreeDBranchAnalysis } from '../types';
+import type { FigureElement, GroundingGraphSummary, ThreeDBranchAnalysis } from '../types';
 
 interface FigureViewerProps {
   elements: FigureElement[];
   threedAnalysis?: ThreeDBranchAnalysis;
   onSelectElement?: (element: FigureElement) => void;
+  /** Live mode: URL of the analysed figure image. Without it the built-in demo drawing is shown. */
+  imageUrl?: string;
+  dimensions?: { width: number; height: number };
+  graphSummary?: GroundingGraphSummary;
 }
 
-export const FigureViewer: React.FC<FigureViewerProps> = ({ elements, threedAnalysis, onSelectElement }) => {
+const DISPLAY_WIDTH = 600;
+
+const ELEMENT_COLORS: Record<string, string> = {
+  AXIS: '#38bdf8',
+  LEGEND: '#818cf8',
+  LABEL: '#f59e0b',
+  CHART_REGION: '#334155',
+};
+
+/** Live figure with real OCR element boxes and real grounding links from the backend result. */
+const LiveFigure: React.FC<{
+  imageUrl: string;
+  elements: FigureElement[];
+  dimensions?: { width: number; height: number };
+  graphSummary?: GroundingGraphSummary;
+  threedAnalysis?: ThreeDBranchAnalysis;
+  showOverlays: boolean;
+  zoom: number;
+  onSelectElement?: (element: FigureElement) => void;
+}> = ({ imageUrl, elements, dimensions, graphSummary, threedAnalysis, showOverlays, zoom, onSelectElement }) => {
+  const textElements = elements.filter((e) => e.type !== 'CHART_REGION');
+  const [selected, setSelected] = useState<FigureElement | null>(textElements[0] || null);
+  // Boxes are positioned in percent of the source image so they stay aligned at any rendered size.
+  const pct = (v: number, total: number) => `${(100 * v) / total}%`;
+  const labelOf = (id: string) => graphSummary?.nodes.find((n) => n.id === id)?.label ?? id.replace(/^ent:/, '');
+  const links = selected
+    ? (graphSummary?.edges ?? []).filter((e) => e.source === `elem:${selected.id}` && e.target.startsWith('ent:'))
+    : [];
+  const detection = threedAnalysis?.['3d_detection'];
+
+  return (
+    <>
+      <div className="relative flex-1 bg-slate-950/90 rounded-lg overflow-auto flex items-center justify-center p-4 min-h-[340px]">
+        <div className="relative transition-transform duration-200 w-full" style={{ transform: `scale(${zoom})`, maxWidth: DISPLAY_WIDTH }}>
+          <img src={imageUrl} alt="Analysed figure" className="w-full h-auto rounded bg-white block" />
+          {showOverlays && dimensions && elements.map((el) => {
+            if (!el.bbox || el.bbox.length < 4) return null;
+            const [x0, y0, x1, y1] = el.bbox;
+            const color = ELEMENT_COLORS[el.type] ?? '#94a3b8';
+            const isSel = selected?.id === el.id;
+            const clickable = el.type !== 'CHART_REGION';
+            return (
+              <div
+                key={el.id}
+                title={`${el.type}: ${el.text}`}
+                onClick={clickable ? () => { setSelected(el); onSelectElement?.(el); } : undefined}
+                className={clickable ? 'absolute cursor-pointer' : 'absolute pointer-events-none'}
+                style={{
+                  left: pct(x0, dimensions.width), top: pct(y0, dimensions.height),
+                  width: pct(x1 - x0, dimensions.width), height: pct(y1 - y0, dimensions.height),
+                  border: `1.5px ${clickable ? 'solid' : 'dashed'} ${color}`,
+                  background: isSel ? `${color}40` : clickable ? `${color}14` : 'transparent',
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {detection && (
+        <div className="mt-2 text-[11px] font-mono text-slate-400">
+          3D detection: <span className={detection.is_3d ? 'text-emerald-300' : 'text-slate-300'}>
+            {detection.is_3d ? '3D' : '2D'} ({detection.visualization_type}, confidence {detection.confidence.toFixed(2)})
+          </span>
+          {detection.is_3d && ' · a figure image carries no raw 3D geometry'}
+        </div>
+      )}
+
+      <div className="mt-3 p-3 rounded-lg bg-slate-950/80 border border-slate-800 text-xs font-mono">
+        {selected ? (
+          <>
+            <div className="flex items-center gap-2 text-cyan-400 font-semibold mb-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              Grounding for [{selected.type}]: "{selected.text}"
+            </div>
+            {links.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-300">
+                {links.map((l) => (
+                  <span key={l.target} className="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-500/30 text-emerald-300">
+                    {l.relation} → {labelOf(l.target)}
+                    {typeof l.gnn_grounding_score === 'number' && ` (GNN ${l.gnn_grounding_score.toFixed(2)})`}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="text-[11px] text-slate-400">No entity is grounded to this element.</div>
+            )}
+          </>
+        ) : (
+          <div className="text-[11px] text-slate-400">No text elements were detected in this figure.</div>
+        )}
+      </div>
+    </>
+  );
+};
+
+export const FigureViewer: React.FC<FigureViewerProps> = ({
+  elements, threedAnalysis, onSelectElement, imageUrl, dimensions, graphSummary,
+}) => {
   const [zoom, setZoom] = useState(1);
   const [selectedElement, setSelectedElement] = useState<FigureElement | null>(elements[1] || null);
   const [showOverlays, setShowOverlays] = useState(true);
@@ -41,8 +143,8 @@ export const FigureViewer: React.FC<FigureViewerProps> = ({ elements, threedAnal
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Mode Switcher if 3D is available */}
-          <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+          {/* Demo-drawing mode switcher (not shown for live figures) */}
+          <div className={`flex bg-slate-950 p-0.5 rounded-lg border border-slate-800 ${imageUrl ? 'hidden' : ''}`}>
             <button
               onClick={() => setViewMode('2d')}
               className={`px-2.5 py-1 rounded text-[10px] font-mono transition-all ${
@@ -81,7 +183,19 @@ export const FigureViewer: React.FC<FigureViewerProps> = ({ elements, threedAnal
         </div>
       </div>
 
-      {/* Visual Canvas Area */}
+      {imageUrl ? (
+        <LiveFigure
+          imageUrl={imageUrl}
+          elements={elements}
+          dimensions={dimensions}
+          graphSummary={graphSummary}
+          threedAnalysis={threedAnalysis}
+          showOverlays={showOverlays}
+          zoom={zoom}
+          onSelectElement={onSelectElement}
+        />
+      ) : (<>
+      {/* Visual Canvas Area (built-in demo drawing, shown for mock data only) */}
       <div className="relative flex-1 bg-slate-950/90 rounded-lg overflow-hidden flex items-center justify-center p-6 min-h-[340px]">
         <div className="relative transition-transform duration-200" style={{ transform: `scale(${zoom})` }}>
           {viewMode === '2d' ? (
@@ -189,6 +303,7 @@ export const FigureViewer: React.FC<FigureViewerProps> = ({ elements, threedAnal
           </div>
         </div>
       )}
+      </>)}
     </div>
   );
 };

@@ -27,8 +27,23 @@ from src.vision.figure_processor import FigureProcessor
 from src.grounding.entity_graph import EntityGroundingGraph
 from src.generation.caption_generator import GroundedCaptionGenerator
 from src.evaluation.hallucination_checker import HallucinationChecker
+from src.vision.threed_detector import ThreeDVisualizationDetector
 
-def run_end_to_end_pipeline(paper_path: str, figure_path: str, query: str, config_path: str = "config/config.yaml"):
+
+def figure_text_reconstruction(caption: str, elements) -> float:
+    """
+    Fraction of text-bearing figure elements (axes, legends, labels) whose text is reflected in
+    the caption. Used as the SCQ 'reconstruction fidelity' term when no reference caption exists.
+    """
+    texts = [e["text"].lower() for e in elements if e.get("type") in ("AXIS", "LEGEND", "LABEL") and e.get("text")]
+    if not texts:
+        return 0.0
+    cap = caption.lower()
+    return sum(1 for t in texts if t in cap) / len(texts)
+
+
+def run_end_to_end_pipeline(paper_path: str, figure_path: str, query: str, config_path: str = "config/config.yaml",
+                            doc_structure=None, caption_text: str = ""):
     print("=" * 60)
     print("Multi-Modal Scientific Visualization Understanding Pipeline")
     print("=" * 60)
@@ -38,7 +53,9 @@ def run_end_to_end_pipeline(paper_path: str, figure_path: str, query: str, confi
     # 1. Document Ingestion
     print("\n[Step 1/8] Ingesting Scientific Document...")
     ingestor = PDFIngestor(config)
-    if os.path.exists(paper_path):
+    if doc_structure is not None:
+        pass
+    elif os.path.exists(paper_path):
         doc_structure = ingestor.parse_pdf(paper_path)
     else:
         print(f"Warning: PDF path '{paper_path}' not found. Using synthetic document structure for prototype demo.")
@@ -57,7 +74,8 @@ def run_end_to_end_pipeline(paper_path: str, figure_path: str, query: str, confi
                     ]
                 }
             ],
-            "figures": []
+            "figures": [],
+            "metadata": {"status": "SYNTHETIC FALLBACK (PDF not found; built-in demo text used)"}
         }
 
     print(f"  -> Extracted Paper Title: '{doc_structure.get('title')}' ({len(doc_structure.get('sections', []))} sections)")
@@ -88,7 +106,7 @@ def run_end_to_end_pipeline(paper_path: str, figure_path: str, query: str, confi
     # 5. Entity Grounding Graph
     print("\n[Step 5/8] Constructing Entity Grounding Graph...")
     graph_builder = EntityGroundingGraph(config)
-    graph_builder.build_graph(figure_elements.get("elements", []), entities, relations)
+    graph_builder.build_graph(figure_elements.get("elements", []), entities, relations, paragraph=full_text)
     graph_summary = graph_builder.get_grounding_summary()
     print(f"  -> Grounding Graph created: {graph_summary['num_nodes']} nodes, {graph_summary['num_edges']} edges.")
 
@@ -112,15 +130,21 @@ def run_end_to_end_pipeline(paper_path: str, figure_path: str, query: str, confi
     scq_res = verifier.compute_scq_metric(
         entity_coverage=min(len(entities)/5.0, 1.0),
         technical_correctness=verification_output['technical_correctness_ratio'],
-        reconstruction_fidelity=0.85,
+        reconstruction_fidelity=figure_text_reconstruction(caption_output["generated_caption"],
+                                                           figure_elements.get("elements", [])),
         retrieval_accuracy=retrieved_context['weighted_score']
     )
     print(f"  -> Composite SCQ Score: {scq_res['scq_composite_score']:.4f}")
+
+    # 3D branch: detection from pixels (+ text cues reported separately)
+    threed = ThreeDVisualizationDetector(config).detect_3d_content(figure_path, caption_text, full_text)
 
     # Summary JSON Output
     output_summary = {
         "paper_id": doc_structure["paper_id"],
         "figure_id": figure_elements["figure_id"],
+        "figure_path": figure_path,
+        "document_structure": doc_structure,
         "query": query,
         "extracted_entities": entities,
         "retrieved_context": retrieved_context,
@@ -129,16 +153,18 @@ def run_end_to_end_pipeline(paper_path: str, figure_path: str, query: str, confi
         "generated_caption": caption_output["generated_caption"],
         "verification_results": verification_output,
         "scq_evaluation": scq_res,
+        "threed_detection": threed,
         "status_declarations": {
             "pdf_ingestion": doc_structure.get("metadata", {}).get("status", "IMPLEMENTED"),
-            "scientific_ner": "IMPLEMENTED (SciBERT/Regex Hybrid)",
-            "hierarchical_retrieval": "IMPLEMENTED (4-Level Sentence Transformers + FAISS)",
+            "scientific_ner": "PROTOTYPE (regex vocabulary; SciBERT not loaded)",
+            "hierarchical_retrieval": ("IMPLEMENTED (4-level Sentence-Transformers + FAISS)" if indexer.use_st
+                                       else "PARTIAL (4-level word-overlap fallback; sentence-transformers unavailable)"),
             "figure_processing": figure_elements.get("status", "IMPLEMENTED"),
             "entity_grounding_graph": graph_summary.get("status", "IMPLEMENTED"),
             "grounded_captioning": caption_output.get("status", "IMPLEMENTED"),
             "hallucination_verification": verification_output.get("status", "IMPLEMENTED"),
-            "cross_modal_tri_modal": "PARTIALLY IMPLEMENTED (Phase 2)",
-            "3d_visualization_pathway": "PLANNED (Phase 4)"
+            "cross_modal_clip": "BLOCKED (CLIP weights not downloadable in this environment)",
+            "3d_visualization_pathway": threed.get("status", "")
         }
     }
 

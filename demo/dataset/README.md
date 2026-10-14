@@ -1,21 +1,18 @@
-# SciCap — Scientific Figure Captioning Dataset Integration
+# Demo samples (synthetic placeholders)
 
-This directory contains a curated, representative benchmark subset of the **SciCap Scientific Figure Captioning Dataset** (arXiv figure-text pairs) integrated into the Multi-Modal Scientific Visualization Understanding pipeline.
+These four samples follow the SciCap schema but are **not SciCap data**. The images are
+placeholder drawings without axis labels or legend text, and the captions/paragraphs were
+written for the demo. They exist so the API (`/scicap/*`) and the frontend have something to
+show. Do not report metrics computed on them.
 
-## SciCap Schema & Sample Coverage
+`3d_samples/alphafold_t1087_3d.json` is a **synthetic helix** point cloud, not AlphaFold output.
 
-- **Target Domain**: Computer Vision, Deep Learning, Molecular Visualization, & NLP papers.
-- **Annotated Components**:
-  - : Unique arXiv figure identifier.
-  - : arXiv paper ID.
-  - : Author-written figure caption from the original research paper.
-  - : 2D Plot, Heatmap, 3D Molecular Visualization, Scatter Plot.
-  - : Surrounding paragraph and section text.
-  - : Extracted scientific entities (METHOD, MODEL, DATASET, METRIC, VARIABLE).
+Quantitative experiments use the controlled benchmark in `data/benchmark/`
+(see `docs/BENCHMARK.md`), which uses real PDB geometry for its molecular 3D figures.
 
-## Samples Included in Prototype Subset
-
-1. : **ResNet vs ViT Top-1 Accuracy Curves** (2D Plot)
-2. : **Transformer Self-Attention Heatmap Alignment** (2D Heatmap)
-3. : **Protein Molecular Structure Surface Render** (3D Prototype Pathway)
-4. : **Loss Convergence Across Learning Rates** (Scatter Plot)
+| ID | Placeholder for | Figure type |
+|---|---|---|
+| scicap_001 | ViT vs ResNet accuracy curves | 2D line plot |
+| scicap_002 | Transformer attention heatmap | 2D heatmap |
+| scicap_003 | Protein structure render | 3D (placeholder drawing is a flat ellipse) |
+| scicap_004 | BatchNorm loss vs learning rate | scatter plot |

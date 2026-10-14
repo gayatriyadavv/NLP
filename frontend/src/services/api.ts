@@ -20,14 +20,23 @@ export async function runPipeline(
     });
 
     if (!response.ok) {
-      console.warn('Backend API returned non-OK response, falling back to mock data.');
+      console.warn('Backend API returned non-OK response; showing built-in demo data (flagged as mock).');
       return DEFAULT_PIPELINE_RESULT;
     }
 
     const data = await response.json();
     return data as PipelineResult;
   } catch (err) {
-    console.warn('Backend API unreachable, using local pipeline results.', err);
+    console.warn('Backend API unreachable; showing built-in demo data (flagged as mock).', err);
     return DEFAULT_PIPELINE_RESULT;
+  }
+}
+
+export async function checkBackendHealth(): Promise<boolean> {
+  try {
+    const response = await fetch('/api/health');
+    return response.ok;
+  } catch {
+    return false;
   }
 }

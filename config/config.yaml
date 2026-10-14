@@ -23,8 +23,12 @@ models:
     vector_store: "faiss"  # Options: faiss, memory
     top_k: 5
   vision:
-    ocr_engine: "easyocr" # Fallback: pytesseract / simple_opencv
-    layout_detection: "opencv"
+    ocr_engine: "easyocr"
+    layout_detection: "ocr_layout_heuristics"
+    figure_classifier_checkpoint: "models/checkpoints/figure_classifier.pt"
+    cross_modal_3d_checkpoint: "models/checkpoints/cross_modal_3d.pt"
+  grounding:
+    checkpoint: "models/checkpoints/grounding_gnn.pt"
   captioning:
     vlm_model: "Salesforce/blip-image-captioning-base" # Practical lightweight VLM for M4 Pro
     max_new_tokens: 150
@@ -50,6 +54,13 @@ scq_evaluation:
     w_technical_correctness: 0.30
     w_reconstruction_fidelity: 0.20
     w_retrieval_accuracy: 0.20
+
+retrieval:
+  multimodal_weights:
+    w_text: 0.40
+    w_2d: 0.25
+    w_3d: 0.20
+    w_gnn: 0.15
 
 ablation_switches:
   hierarchical_level: "all" # Options: none, paper_only, paper_section, paper_section_paragraph, all

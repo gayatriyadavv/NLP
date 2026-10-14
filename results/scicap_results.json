@@ -1,0 +1,145 @@
+{
+  "dataset": {
+    "name": "CrowdAILab/scicap",
+    "license": "CC BY-NC-SA 4.0 (SciCap, Hsu et al., 2021)",
+    "num_figures": 287,
+    "source": "SciCap val split subset (real arXiv graph plots, author captions)",
+    "skipped_unreadable_images": [
+      "7424650"
+    ]
+  },
+  "hardware": {
+    "platform": "Linux-6.18.44-fc-v114-x86_64-with-glibc2.39",
+    "torch": "2.14.1+cu130",
+    "device": "cpu"
+  },
+  "timestamp": "2026-10-14T15:19:59",
+  "ocr": {
+    "mean_text_elements_per_figure": 9.14,
+    "figures_with_no_text_detected": 19,
+    "latency_ms_median_uncached": 2842.7,
+    "note": "3D detection for this dataset is reported per mode in results/threed_detector_modes.json"
+  },
+  "ner_and_grounding": {
+    "mean_regex_entities_per_figure": 2.05,
+    "figures_with_no_entities": 130,
+    "mean_grounded_links_per_figure": 0.25,
+    "grounding_mode": "supervised",
+    "latency_ms_median": 2.14,
+    "note": "No grounding labels in SciCap - link accuracy cannot be measured."
+  },
+  "threed_detector_out_of_domain": {
+    "mode": "image (pixels only)",
+    "false_positive_rate_on_graph_plots": 0.9268
+  },
+  "leakage_check": {
+    "paragraphs_containing_caption_verbatim": 35,
+    "mitigation": "caption text, 'Figure N:' labels and sentences sharing >=60% of caption tokens removed from the paragraph before retrieval and verification",
+    "text_only_retrieval_on_raw_paragraph_LEAKY": {
+      "recall@1": 0.9268,
+      "recall@5": 0.9652,
+      "mrr": 0.9451
+    }
+  },
+  "retrieval_caption_to_figure": {
+    "gallery_size": 287,
+    "configs": {
+      "text_only": {
+        "recall@1": 0.8746,
+        "recall@5": 0.9199,
+        "mrr": 0.8974
+      },
+      "text+ocr": {
+        "recall@1": 0.899,
+        "recall@5": 0.9373,
+        "mrr": 0.9187
+      },
+      "text+grounded": {
+        "recall@1": 0.8746,
+        "recall@5": 0.9268,
+        "mrr": 0.8978
+      },
+      "text+ocr+grounded": {
+        "recall@1": 0.899,
+        "recall@5": 0.9373,
+        "mrr": 0.9178
+      },
+      "ocr_only": {
+        "recall@1": 0.4774,
+        "recall@5": 0.5679,
+        "mrr": 0.5211
+      }
+    },
+    "paired_bootstrap_vs_text_only": {
+      "text+ocr_vs_text_only": {
+        "difference": 0.0213,
+        "ci95_low": 0.003,
+        "ci95_high": 0.0408,
+        "p_value_bootstrap": 0.0188,
+        "significant_at_0.05": true
+      },
+      "text+grounded_vs_text_only": {
+        "difference": 0.0004,
+        "ci95_low": -0.0048,
+        "ci95_high": 0.0057,
+        "p_value_bootstrap": 0.6988,
+        "significant_at_0.05": false
+      },
+      "text+ocr+grounded_vs_text_only": {
+        "difference": 0.0205,
+        "ci95_low": 0.0028,
+        "ci95_high": 0.0392,
+        "p_value_bootstrap": 0.0186,
+        "significant_at_0.05": true
+      },
+      "ocr_only_vs_text_only": {
+        "difference": -0.3763,
+        "ci95_low": -0.4352,
+        "ci95_high": -0.3186,
+        "p_value_bootstrap": 0.0,
+        "significant_at_0.05": true
+      }
+    }
+  },
+  "caption_quality_vs_author_caption": {
+    "bleu4_mean": 0.0513,
+    "rouge_l_mean": 0.0837,
+    "technical_correctness_mean": 0.2643
+  },
+  "scq": {
+    "mean": 0.2951,
+    "std": 0.1618
+  },
+  "examples": [
+    {
+      "figure_id": "7424363",
+      "caption": "The coefficient of Pe2 in the small-Pe optimal enhancement (32) with n =  (first zero). The optimal enhancement is achieved for m = 2, then drops off slowly.",
+      "generated_caption": "Insufficient evidence to describe this figure.",
+      "ocr": ""
+    },
+    {
+      "figure_id": "7424364",
+      "caption": "The accuracy score for different window size.",
+      "generated_caption": "accuracy reported. The axes show 4pop and Accuangy Scine.",
+      "ocr": "4pop ~sau Accuangy Scine"
+    },
+    {
+      "figure_id": "7424365",
+      "caption": "Frequency shift due to a neutron EDM of dn =  \u00d7 0\u221225 e cm and 75 kV/cm electric field in a critically dressed system of 3He and neutrons. Excellent agreement is observed between the shift predicted from the simulation (\u2206\u03c9sim) and the higher order perturbation theory (\u2206\u03c9pt). The deviation from the simulation and the shift predicted from the J0 approximation (\u2206\u03c9J) is apparent at lower frequencies. The deviation from a constant for the J0 approximation is due to deviation of xc from that given by Eq. 7. For these calculations B0 = 3 \u00b5T giving \u03c9 \u2032 0 \u223c 380 rad/s.",
+      "generated_caption": "accuracy, Recall reported. The axes show (rad s-1) and w (rad s-1). Legend entries: Awpt, Awj.",
+      "ocr": "Awpt (rad s-1) Awj w (rad s-1) Awsimn"
+    },
+    {
+      "figure_id": "7424366",
+      "caption": "Comparison of LDA band structure and fit by the Wannier functions. The circles denote the energies computed by LDA and the solid lines denote the Wannier fit.",
+      "generated_caption": "The axes show DF [e V ] and ooo0.",
+      "ocr": "DF [e V ] ooo0"
+    },
+    {
+      "figure_id": "7424367",
+      "caption": "The difference between the measured \u03b2 values for the individual regions and galaxy light vs. distance from the nucleus, colour-coded by \u03a3H\u03b1 , which is presented in units of erg s \u22121 kpc\u22122. The error bar in the top left corner represents the characteristic uncertainty. The second order polynomial shown in Figure 19 is translated from \u2206\u03c4lB to \u2206\u03b2 using the B16 relation (black line), when the sparse star forming regions are excluded. The resulting dispersion associated with the fit is \u03c3disp = 0.28.",
+      "generated_caption": "The axes show preg and Distance from Nucleus (kpc).",
+      "ocr": "log(ZHa) preg Distance from Nucleus (kpc) log(ZHa) ~1.0 ~0.5"
+    }
+  ]
+}

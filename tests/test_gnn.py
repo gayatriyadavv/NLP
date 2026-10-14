@@ -89,3 +89,23 @@ if __name__ == "__main__":
     test_gnn_pipeline_training()
     test_entity_grounding_graph_gnn_integration()
     print("\nALL PYTORCH GEOMETRIC GNN TESTS PASSED!")
+
+
+def test_grounding_summary_edges_keep_node_ids(tmp_path):
+    # Regression: an edge attribute named "source" used to overwrite the edge's source node id
+    # in get_grounding_summary().
+    import numpy as np
+    from src.grounding.gnn_pipeline import SupervisedGroundingTrainer
+    elements = [{"id": "axis_x", "type": "AXIS", "text": "Epoch"},
+                {"id": "legend_1", "type": "LEGEND", "text": "GCN"}]
+    entities = [{"text": "Epoch", "type": "VARIABLE"}, {"text": "Graph Convolutional Network", "type": "METHOD"}]
+    tr = SupervisedGroundingTrainer(epochs=1, seed=0)
+    tr.threshold = 0.0  # force links so edges exist
+    path = str(tmp_path / "g.pt")
+    tr.save(path)
+    builder = EntityGroundingGraph(checkpoint_path=path)
+    builder.build_graph(elements, entities, run_gnn=True)
+    summary = builder.get_grounding_summary()
+    assert summary["gnn_metrics"]["mode"] == "supervised"
+    gnn_edges = [e for e in summary["edges"] if e.get("link_source") == "gnn"]
+    assert gnn_edges and all(e["source"].startswith("elem:") for e in gnn_edges)

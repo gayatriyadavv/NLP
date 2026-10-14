@@ -1,11 +1,11 @@
 {
-  "dataset_name": "SciCap Subset (Scientific Figure Captioning Benchmark)",
+  "dataset_name": "Synthetic placeholder samples (SciCap-style schema; NOT SciCap data)",
   "total_samples": 4,
-  "citation": "Hsu et al. (SciCap: Scientific Figure Captioning Dataset)",
+  "citation": "Schema modelled on SciCap (Hsu et al., 2021). Images, captions and paragraphs are synthetic placeholders.",
   "samples": [
     {
       "sample_id": "scicap_001",
-      "paper_id": "arxiv_2103.00020",
+      "paper_id": "arxiv_2010.11929",
       "paper_title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
       "figure_type": "2D Plot",
       "image_filename": "scicap_001.png",
@@ -59,7 +59,8 @@
           "type": "LEGEND",
           "text": "ResNet-50 (Blue)"
         }
-      ]
+      ],
+      "provenance": "synthetic placeholder"
     },
     {
       "sample_id": "scicap_002",
@@ -100,11 +101,12 @@
           "type": "LEGEND",
           "text": "Attention Weight (0.0 - 1.0)"
         }
-      ]
+      ],
+      "provenance": "synthetic placeholder"
     },
     {
       "sample_id": "scicap_003",
-      "paper_id": "arxiv_2107.03323",
+      "paper_id": "doi_10.1038/s41586-021-03819-2",
       "paper_title": "Highly Accurate Protein Structure Prediction with AlphaFold",
       "figure_type": "3D Molecular Surface",
       "image_filename": "scicap_003.png",
@@ -136,7 +138,8 @@
           "type": "LEGEND",
           "text": "pLDDT Score Color Bar"
         }
-      ]
+      ],
+      "provenance": "synthetic placeholder"
     },
     {
       "sample_id": "scicap_004",
@@ -177,7 +180,9 @@
           "type": "LEGEND",
           "text": "BN-Inception vs Baseline"
         }
-      ]
+      ],
+      "provenance": "synthetic placeholder"
     }
-  ]
+  ],
+  "provenance_note": "Audit 2026-10-08: images are placeholder drawings without axis/legend text; captions and paragraphs were written for the demo and are not author-written text from the cited papers. Use only for UI/API demos. Quantitative evaluation uses data/benchmark (see docs/BENCHMARK.md)."
 }

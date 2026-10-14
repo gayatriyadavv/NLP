@@ -1,10 +1,10 @@
 {
-  "dataset_name": "3D Scientific Visualization & Point-Cloud Benchmark Extension",
-  "total_3d_samples": 2,
+  "dataset_name": "Synthetic 3D fixture (demo only)",
+  "total_3d_samples": 1,
   "samples": [
     {
       "sample_id": "scicap_003",
-      "title": "AlphaFold Protein T1087 Structure Render",
+      "title": "Synthetic helix point cloud used by the scicap_003 placeholder",
       "type": "3D_MOLECULAR_SURFACE",
       "point_cloud_file": "alphafold_t1087_3d.json",
       "num_points": 1024

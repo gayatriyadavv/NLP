@@ -15,7 +15,8 @@ interface MainDashboardProps {
 
 export const MainDashboard: React.FC<MainDashboardProps> = ({ pipelineResult }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'context' | 'entities' | 'graph' | 'caption' | 'verification'>('overview');
-  const doc: DocumentStructure = SAMPLE_DOCUMENT;
+  const doc: DocumentStructure = pipelineResult.document_structure ?? SAMPLE_DOCUMENT;
+  const isLive = !pipelineResult.is_mock_data && !!pipelineResult.figure_path;
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[calc(100vh-80px)]">
@@ -26,7 +27,7 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({ pipelineResult }) 
           <h3 className="text-xs font-semibold text-slate-100 font-mono mt-1 line-clamp-2">
             {doc.title}
           </h3>
-          <span className="text-[10px] text-slate-400 font-mono">ID: {doc.paper_id} • {doc.num_pages} Pages</span>
+          <span className="text-[10px] text-slate-400 font-mono">ID: {doc.paper_id}{doc.num_pages ? ` • ${doc.num_pages} Pages` : ''}</span>
         </div>
 
         {/* Section Tree */}
@@ -52,7 +53,13 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({ pipelineResult }) 
 
       {/* CENTER PANEL: Large Figure Viewer (5 cols) */}
       <div className="lg:col-span-5 flex flex-col">
-        <FigureViewer elements={pipelineResult.figure_elements.elements} />
+        <FigureViewer
+          elements={pipelineResult.figure_elements.elements}
+          threedAnalysis={pipelineResult['3d_branch_analysis']}
+          imageUrl={isLive ? `/api/figure-image?path=${encodeURIComponent(pipelineResult.figure_path!)}` : undefined}
+          dimensions={pipelineResult.figure_elements.dimensions}
+          graphSummary={isLive ? pipelineResult.grounding_graph_summary : undefined}
+        />
       </div>
 
       {/* RIGHT PANEL: AI Analysis Tabs (4 cols) */}

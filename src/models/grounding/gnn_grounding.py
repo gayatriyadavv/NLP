@@ -101,3 +101,47 @@ class GNNGroundingModel(nn.Module):
         """
         scores = torch.sigmoid(self.link_score(z_src, z_tgt)).squeeze(-1)
         return scores
+
+
+class PairGroundingModel(nn.Module):
+    """
+    Supervised element <-> entity grounding scorer.
+
+    Node encoder: ``GNNGroundingModel`` (message passing over the grounding graph).
+    Pair head:    MLP over [z_u, z_v, z_u * z_v, pairwise_features] -> logit.
+
+    With ``use_message_passing=False`` the encoder is run with an empty edge set, so each node
+    embedding depends only on its own features. This is the no-message-passing diagnostic used
+    to measure what the graph structure itself contributes.
+    """
+
+    def __init__(
+        self,
+        in_channels: int = 64,
+        hidden_channels: int = 64,
+        pair_feature_dim: int = 10,
+        gnn_type: str = "GAT",
+        num_layers: int = 2,
+        dropout: float = 0.1,
+        heads: int = 2,
+        use_message_passing: bool = True,
+    ):
+        super(PairGroundingModel, self).__init__()
+        self.use_message_passing = use_message_passing
+        self.encoder = GNNGroundingModel(in_channels, hidden_channels, hidden_channels,
+                                         gnn_type=gnn_type, num_layers=num_layers,
+                                         dropout=dropout, heads=heads)
+        self.head = nn.Sequential(
+            nn.Linear(3 * hidden_channels + pair_feature_dim, hidden_channels),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_channels, 1),
+        )
+
+    def forward(self, x: torch.Tensor, edge_index: torch.Tensor, cand_index: torch.Tensor,
+                cand_feat: torch.Tensor) -> torch.Tensor:
+        if not self.use_message_passing:
+            edge_index = edge_index[:, :0]
+        z = self.encoder(x, edge_index)
+        zu, zv = z[cand_index[0]], z[cand_index[1]]
+        return self.head(torch.cat([zu, zv, zu * zv, cand_feat], dim=-1)).squeeze(-1)

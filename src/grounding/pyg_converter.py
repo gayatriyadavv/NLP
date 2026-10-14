@@ -11,7 +11,7 @@ import networkx as nx
 from torch_geometric.data import Data, HeteroData
 
 # Global mapping dictionaries for categorical feature encoding
-NODE_TYPES = ["FIGURE_ELEMENT", "SCIENTIFIC_ENTITY", "PAPER_CLAIM", "PARAGRAPH_CONTEXT"]
+NODE_TYPES = ["FIGURE_ELEMENT", "SCIENTIFIC_ENTITY", "PAPER_CLAIM", "PARAGRAPH_CONTEXT", "FIGURE_3D", "FIGURE_IMAGE"]
 ELEMENT_TYPES = ["AXIS", "LEGEND", "CHART_REGION", "LABEL", "NONE"]
 ENTITY_TYPES = [
     "METHOD", "MODEL", "DATASET", "METRIC", "METRIC_VALUE", 
@@ -24,8 +24,16 @@ RELATION_TYPES = [
 ]
 
 class PyGGraphConverter:
-    def __init__(self, feature_dim: int = 64):
+    def __init__(self, feature_dim: int = 64, text_encoding: str = "positional"):
+        """
+        text_encoding:
+            "positional" - original character x position hashing (default, backward compatible)
+            "trigram"    - bag of hashed character trigrams (order-free, robust to small edits)
+        Nodes carrying a ``modal_embedding`` attribute (e.g. a FIGURE_3D node with a 3D embedding)
+        use that vector, truncated/zero-padded and L2-normalised, in place of the text features.
+        """
         self.feature_dim = feature_dim
+        self.text_encoding = text_encoding
 
     def convert_to_pyg_data(self, graph: nx.DiGraph) -> Tuple[Data, Dict[str, int], Dict[int, str]]:
         """
@@ -154,8 +162,18 @@ class PyGGraphConverter:
         cat_vec = np.array(ntype_onehot + elem_onehot + ent_onehot, dtype=np.float32)
 
         # 4. Text label feature projection via hash embedding
-        label_text = str(data.get("label", ""))
-        text_feat = self._text_to_feature_vec(label_text, target_dim=self.feature_dim - len(cat_vec))
+        target_dim = self.feature_dim - len(cat_vec)
+        modal = data.get("modal_embedding")
+        if modal is not None:
+            text_feat = np.zeros(target_dim, dtype=np.float32)
+            m = np.asarray(modal, dtype=np.float32)[:target_dim]
+            text_feat[:len(m)] = m
+            n = np.linalg.norm(text_feat)
+            if n > 0:
+                text_feat = text_feat / n
+        else:
+            label_text = str(data.get("label", ""))
+            text_feat = self._text_to_feature_vec(label_text, target_dim=target_dim)
 
         full_vec = np.concatenate([cat_vec, text_feat])
         return full_vec
@@ -168,9 +186,15 @@ class PyGGraphConverter:
         if not text:
             return vec
         text_clean = text.lower()
-        for i, char in enumerate(text_clean):
-            idx = (ord(char) * (i + 1)) % target_dim
-            vec[idx] += 1.0
+        if self.text_encoding == "trigram":
+            import zlib
+            padded = f"  {text_clean} "
+            for i in range(len(padded) - 2):
+                vec[zlib.crc32(padded[i:i + 3].encode()) % target_dim] += 1.0
+        else:
+            for i, char in enumerate(text_clean):
+                idx = (ord(char) * (i + 1)) % target_dim
+                vec[idx] += 1.0
         norm = np.linalg.norm(vec)
         if norm > 0:
             vec = vec / norm

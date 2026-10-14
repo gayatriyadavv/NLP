@@ -51,6 +51,7 @@ export const SAMPLE_DOCUMENT: DocumentStructure = {
 };
 
 export const DEFAULT_PIPELINE_RESULT: PipelineResult = {
+  is_mock_data: true,
   paper_id: "arxiv_2103_ResNet_ViT_01",
   figure_id: "fig_03_accuracy_curves",
   query: "What figure shows the accuracy comparison between ResNet and ViT over training epochs?",

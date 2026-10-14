@@ -78,23 +78,34 @@ class PointNetExtractor(nn.Module):
             z_3d = self.forward(pts_tensor)
             return z_3d.cpu().numpy()[0]
 
-def load_point_cloud_fixture(filepath: str, num_points: int = 1024) -> np.ndarray:
+def load_point_cloud_fixture(filepath: str, num_points: int = None) -> np.ndarray:
     """
-    Loads 3D point cloud coordinates from file or generates deterministic sphere/helix coordinates.
+    Loads 3D point coordinates [N, 3] from a ``.json`` file ({"points": [[x, y, z], ...]}) or a
+    ``.npy`` array. Raises FileNotFoundError / ValueError instead of fabricating geometry.
+    If ``num_points`` is given, the cloud is resampled to exactly that many points (deterministic).
     """
-    if os.path.exists(filepath) and filepath.endswith(".json"):
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"Point cloud file not found: {filepath}")
+    if filepath.endswith(".npy"):
+        pts = np.load(filepath).astype(np.float32)
+    elif filepath.endswith(".json"):
         import json
         with open(filepath, "r") as f:
-            data = json.load(f)
-            pts = np.array(data.get("points", []), dtype=np.float32)
-            if len(pts) > 0:
-                return pts
-
-    # Deterministic Synthetic 3D Protein Helix Point Cloud Generator
-    t = np.linspace(0, 4 * np.pi, num_points)
-    x = np.sin(t) + 0.1 * np.random.randn(num_points)
-    y = np.cos(t) + 0.1 * np.random.randn(num_points)
-    z = t / (4 * np.pi) + 0.1 * np.random.randn(num_points)
-    
-    pts = np.column_stack([x, y, z]).astype(np.float32)
+            pts = np.array(json.load(f).get("points", []), dtype=np.float32)
+    else:
+        raise ValueError(f"Unsupported point cloud format: {filepath}")
+    if pts.ndim != 2 or pts.shape[1] != 3 or len(pts) == 0:
+        raise ValueError(f"Expected an [N, 3] point array in {filepath}, got shape {pts.shape}")
+    if num_points is not None and len(pts) != num_points:
+        idx = np.linspace(0, len(pts) - 1, num_points).round().astype(int)
+        pts = pts[idx]
     return pts
+
+
+def random_rotation_matrix(rng: np.random.Generator) -> np.ndarray:
+    """Uniformly random 3D rotation (QR decomposition of a Gaussian matrix)."""
+    q, r = np.linalg.qr(rng.normal(size=(3, 3)))
+    q = q * np.sign(np.diag(r))
+    if np.linalg.det(q) < 0:
+        q[:, 0] = -q[:, 0]
+    return q.astype(np.float32)
